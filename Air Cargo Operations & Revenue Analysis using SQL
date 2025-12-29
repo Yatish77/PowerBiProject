@@ -1,0 +1,121 @@
+Problem Statement: Airlines face challenges in identifying high-demand routes, improving seat utilization, and reducing customer complaints. This project analyzes air cargo and passenger data to optimize operations and revenue.
+
+Tables Used:
+
+airports
+airport_id INT PRIMARY KEY,
+airport_name VARCHAR(100),
+city VARCHAR(50),
+country VARCHAR(50)
+
+routes
+route_id INT PRIMARY KEY,
+source_airport INT,
+destination_airport INT,
+distance_km INT
+
+flights
+flight_id INT PRIMARY KEY,
+route_id INT,
+flight_date DATE,
+capacity INT,
+booked_seats INT
+
+tickets
+ticket_id INT PRIMARY KEY,
+flight_id INT,
+price DECIMAL(10,2),
+booking_date DATE
+
+complaints
+complaint_id INT PRIMARY KEY,
+flight_id INT,
+complaint_type VARCHAR(50),
+complaint_date DATE
+
+
+1. Identify Busiest Routes
+SELECT 
+    r.route_id,
+    a1.city AS source_city,
+    a2.city AS destination_city,
+    COUNT(f.flight_id) AS total_flights
+FROM flights f
+JOIN routes r ON f.route_id = r.route_id
+JOIN airports a1 ON r.source_airport = a1.airport_id
+JOIN airports a2 ON r.destination_airport = a2.airport_id
+GROUP BY r.route_id, a1.city, a2.city
+ORDER BY total_flights DESC
+LIMIT 5;
+
+
+Insight to mention:
+
+Identified top 5 busiest routes contributing to majority of passenger traffic.
+
+ 2. Seat Utilization Analysis
+SELECT
+    flight_id,
+    ROUND((booked_seats * 100.0 / capacity), 2) AS seat_utilization_pct
+FROM flights;
+
+
+Business Value:
+
+Helped identify underperforming flights for consolidation or pricing changes.
+
+ 3. Revenue Analysis by Route
+SELECT
+    r.route_id,
+    SUM(t.price) AS total_revenue
+FROM tickets t
+JOIN flights f ON t.flight_id = f.flight_id
+JOIN routes r ON f.route_id = r.route_id
+GROUP BY r.route_id
+ORDER BY total_revenue DESC;
+
+
+Insight:
+
+High-revenue routes were prioritized for increased flight frequency.
+
+ 4. Monthly Revenue Trend
+SELECT
+    DATE_TRUNC('month', booking_date) AS month,
+    SUM(price) AS monthly_revenue
+FROM tickets
+GROUP BY month
+ORDER BY month;
+
+
+Impact to Say:
+
+Enabled revenue forecasting and seasonal demand planning.
+
+ 5. Customer Complaint Analysis
+SELECT
+    complaint_type,
+    COUNT(*) AS total_complaints
+FROM complaints
+GROUP BY complaint_type
+ORDER BY total_complaints DESC;
+
+
+Outcome:
+
+Identified baggage delays and overbooking as top complaint drivers.
+
+ 6. Complaints vs Seat Utilization (Advanced Insight)
+SELECT
+    f.flight_id,
+    ROUND((f.booked_seats * 100.0 / f.capacity), 2) AS utilization,
+    COUNT(c.complaint_id) AS complaints
+FROM flights f
+LEFT JOIN complaints c ON f.flight_id = c.flight_id
+GROUP BY f.flight_id, utilization
+ORDER BY complaints DESC;
+
+
+Story to Tell:
+
+Overbooked flights showed higher complaint frequency → led to booking caps.
